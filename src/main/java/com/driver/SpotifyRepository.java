@@ -221,61 +221,84 @@ public class SpotifyRepository {
     }
 
     public Song likeSong(String mobile, String songTitle) throws Exception {
-        User user = null;
-        for (User user1 : users) {
-            if (user1.getMobile().equals(mobile)) {
-                user = user1;
-                break; // Exit the loop once user is found
-            }
-        }
+        // Find the user with the given mobile number
+        User user = getUserByMobile(mobile);
         if (user == null) {
             throw new Exception("User does not exist");
         }
 
-        Song song = null;
-        for (Song song1 : songs) {
-            if (song1.getTitle().equals(songTitle)) {
-                song = song1;
-                break; // Exit the loop once song is found
-            }
-        }
+        // Find the song with the given title
+        Song song = getSongByTitle(songTitle);
         if (song == null) {
             throw new Exception("Song does not exist");
         }
 
-        List<User> userList = songLikeMap.getOrDefault(song, new ArrayList<>());
-        if (!userList.contains(user)) {
-            userList.add(user);
+        // Check if the user has already liked the song
+        if (hasUserLikedSong(user, song)) {
+            // User has already liked the song, do nothing
+            return song;
         }
 
-        songLikeMap.put(song, userList);
-        song.setLikes(userList.size());
+        // Add the user to the list of users who liked the song
+        addUserToLikedUsers(song, user);
 
-        Album album = getAlbumForSong(song);
-        if (album == null) {
-            throw new Exception("Album does not exist");
+        // Automatically like the corresponding artist of the song
+        Artist artist = getArtistForSong(song);
+        if (artist != null) {
+            // Increment the artist's likes
+            artist.setLikes(song.getLikes()+1);
         }
 
-        Artist artist = getArtistForAlbum(album);
-        if (artist == null) {
-            throw new Exception("Artist does not exist");
-        }
-
-        artist.setLikes(userList.size());
+        // Return the song after updating
         return song;
     }
 
-    // Helper method to get the album associated with a song
-    private Album getAlbumForSong(Song song) {
-        for (Album album : albumSongMap.keySet()) {
-            if (albumSongMap.get(album).contains(song)) {
-                return album;
+    // Helper method to find a user by mobile number
+    private User getUserByMobile(String mobile) {
+        for (User user : users) {
+            if (user.getMobile().equals(mobile)) {
+                return user;
             }
         }
-        return null; // Album not found
+        return null;
     }
 
-    // Helper method to get the artist associated with an album
+    // Helper method to find a song by title
+    private Song getSongByTitle(String songTitle) {
+        for (Song song : songs) {
+            if (song.getTitle().equals(songTitle)) {
+                return song;
+            }
+        }
+        return null;
+    }
+
+    // Helper method to check if a user has already liked a song
+    private boolean hasUserLikedSong(User user, Song song) {
+        List<User> likedUsers = songLikeMap.get(song);
+        return likedUsers != null && likedUsers.contains(user);
+    }
+
+    // Helper method to add a user to the list of users who liked a song
+    private void addUserToLikedUsers(Song song, User user) {
+        List<User> likedUsers = songLikeMap.getOrDefault(song, new ArrayList<>());
+        likedUsers.add(user);
+        songLikeMap.put(song, likedUsers);
+        // Update the number of likes for the song
+        song.setLikes(likedUsers.size());
+    }
+
+    // Helper method to get the artist associated with a song
+    private Artist getArtistForSong(Song song) {
+        for (Album album : albumSongMap.keySet()) {
+            List<Song> songsInAlbum = albumSongMap.get(album);
+            if (songsInAlbum.contains(song)) {
+                return getArtistForAlbum(album);
+            }
+        }
+        return null;
+    }
+
     private Artist getArtistForAlbum(Album album) {
         for (Artist artist : artistAlbumMap.keySet()) {
             if (artistAlbumMap.get(artist).contains(album)) {
