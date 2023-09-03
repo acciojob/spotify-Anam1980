@@ -53,7 +53,7 @@ public class SpotifyRepository {
         Artist artist = null;
         if(!artists.contains(artistName)){
             artist = new Artist(artistName);
-            artists.add(artist);
+
         }
         else{
             for(Artist art : artists){
@@ -64,12 +64,10 @@ public class SpotifyRepository {
         }
         Album album = new Album(title);
         albums.add(album);
-        List<Album> albumList = new ArrayList<>();
-        if(artistAlbumMap.containsKey(artist)){
-            albumList = artistAlbumMap.get(artist);
-        }
-        albumList.add(album);
-        artistAlbumMap.put(artist, albumList);
+
+        artistAlbumMap.get(artist).add(album);
+
+        albumSongMap.put(album, new ArrayList<>());
 
         return album;
     }
